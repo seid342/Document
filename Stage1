@@ -1,0 +1,29 @@
+body {
+  background: linear-gradient(135deg, #1977cc 0%, #3f8dbc 100%);
+  color: white;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.hero-section {
+  height: 100vh;
+}
+
+h1 {
+  font-weight: bold;
+  font-size: 2.5rem;
+}
+
+p {
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+}
+
+.btn-primary {
+  background-color: #0dcaf0;
+  border: none;
+}
+
+.btn-outline-light {
+  border-color: white;
+  color: white;
+}

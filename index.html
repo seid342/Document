@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Word Guessing Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --fg:#111; --muted:#666; --accent:#3b82f6; --bg:#fafafa; }
+    html,body{height:100%}
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:var(--bg); color:var(--fg); display:grid; place-items:center;
+    }
+    .card{
+      width:min(720px,92vw); background:#fff; border-radius:16px;
+      box-shadow:0 10px 30px rgba(0,0,0,.08); padding:28px 28px 22px;
+    }
+    h1{margin:0 0 8px; font-size:26px; letter-spacing:.3px}
+    .sub{color:var(--muted); margin-bottom:18px}
+    .row{display:flex; gap:18px; flex-wrap:wrap; align-items:center}
+    .pill{
+      padding:8px 12px; border:1px dashed #e5e7eb; border-radius:999px;
+      font-variant-numeric:tabular-nums; background:#fafafa
+    }
+    .word{letter-spacing:.28em; font-size:28px; font-weight:600}
+    .letters{word-break:break-all}
+    .actions{margin-top:18px; display:flex; gap:10px; flex-wrap:wrap}
+    button{
+      appearance:none; border:0; border-radius:12px; padding:10px 14px;
+      font-weight:600; cursor:pointer; background:var(--accent); color:#fff;
+      box-shadow:0 6px 16px rgba(59,130,246,.25);
+    }
+    button.secondary{background:#eef2ff; color:#3730a3; box-shadow:none}
+    .muted{color:var(--muted)}
+    .hint{font-size:12px; color:#9ca3af; margin-top:6px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Word Guessing Game</h1>
+    <div class="sub">Guess the hidden word one letter at a time.</div>
+
+    <div class="row">
+      <div class="pill"><strong>Lives:</strong> <span id="lives">—</span></div>
+      <div class="pill"><strong>Status:</strong> <span id="status" class="muted">Ready</span></div>
+    </div>
+
+    <div style="margin:18px 0 10px">
+      <div id="hiddenWord" class="word">_ _ _ _</div>
+      <div class="hint">The UI updates as you play. Guesses are entered via prompt dialogs.</div>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <div><strong>Guessed letters:</strong></div>
+      <div id="guessed" class="letters muted">—</div>
+    </div>
+
+    <div class="actions">
+      <button id="playBtn">Play</button>
+      <button id="guessBtn" class="secondary" title="Make a single guess via prompt">Guess</button>
+      <button id="resetBtn" class="secondary">Reset</button>
+    </div>
+  </div>
+
+  <script>
+    // 1) Choose a word (random from array)
+    const WORDS = [
+      "javascript","apple","notebook","program","developer","algorithm",
+      "variable","function","internet","browser","canvas","coding","matrix",
+      "object","react","module","promise","hangman","socket","testing"
+    ];
+
+    // Game state
+    let targetWord = "";
+    let displayArr = [];
+    let guessedSet = new Set();
+    let lives = 5;
+    let gameOver = false;
+
+    // UI refs
+    const $lives   = document.getElementById("lives");
+    const $status  = document.getElementById("status");
+    const $word    = document.getElementById("hiddenWord");
+    const $guessed = document.getElementById("guessed");
+    const $playBtn = document.getElementById("playBtn");
+    const $guessBtn= document.getElementById("guessBtn");
+    const $resetBtn= document.getElementById("resetBtn");
+
+    function pickRandomWord(){
+      return WORDS[Math.floor(Math.random()*WORDS.length)];
+    }
+
+    // 2) Display hidden word as underscores
+    function initGame(){
+      targetWord = pickRandomWord();
+      displayArr = Array.from(targetWord, () => "_");
+      guessedSet = new Set();
+      lives = 5;
+      gameOver = false;
+      updateDisplay("Game started. Good luck!");
+    }
+
+    function updateDisplay(statusText){
+      $word.textContent = displayArr.join(" ");
+      $lives.textContent = lives;
+      $status.textContent = statusText ?? "";
+      $guessed.textContent = guessedSet.size ? Array.from(guessedSet).join(", ") : "—";
+    }
+
+    // 3) Guessing mechanism via prompt
+    function promptForLetter(){
+      if(gameOver) return;
+      const raw = prompt("Enter a letter (a-z):");
+      if(raw === null) return; // user cancelled
+      let ch = raw.trim().toLowerCase();
+
+      // accept only one a-z letter
+      if(!/^[a-z]$/.test(ch)){
+        alert("Please enter a single letter (a-z).");
+        return;
+      }
+      if(guessedSet.has(ch)) {
+        alert(`You've already guessed "${ch}". Try a different letter.`);
+        return;
+      }
+      guessedSet.add(ch);
+
+      if(targetWord.includes(ch)){
+        // reveal all positions
+        for(let i=0;i<targetWord.length;i++){
+          if(targetWord[i] === ch) displayArr[i] = ch;
+        }
+        updateDisplay(`Good guess! "${ch}" is in the word.`);
+      }else{
+        lives--;
+        updateDisplay(`Sorry, "${ch}" is not in the word.`);
+      }
+
+      // win / lose checks
+      if(displayArr.join("") === targetWord){
+        gameOver = true;
+        alert(`🎉 You won! The word was "${targetWord}".`);
+        return;
+      }
+      if(lives <= 0){
+        gameOver = true;
+        alert(`💀 You lost! The word was "${targetWord}".`);
+        askPlayAgain();
+        return;
+      }
+    }
+
+    // 4) Loop for continuous guessing
+    async function runGuessLoop(){
+      // keep asking until win/lose
+      while(!gameOver){
+        promptForLetter();
+      }
+    }
+
+    // 5) Confirm to play again
+    function askPlayAgain(){
+      const again = confirm("Play again?");
+      if(again){
+        initGame();
+        runGuessLoop();
+      }else{
+        updateDisplay("Thanks for playing!");
+      }
+    }
+
+    // Buttons
+    $playBtn.addEventListener("click", ()=>{ initGame(); runGuessLoop(); });
+    $guessBtn.addEventListener("click", ()=> promptForLetter());
+    $resetBtn.addEventListener("click", ()=> initGame());
+
+    // Auto-ready state
+    updateDisplay("Click Play to start.");
+  </script>
+</body>
+</html>
